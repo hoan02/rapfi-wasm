@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Local build through Docker (needs Docker running). CI does the same in .github/workflows/build.yml.
 set -euo pipefail
 git submodule update --init --depth 1 rapfi

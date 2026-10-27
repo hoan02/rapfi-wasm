@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env bash
+#!/usr/bin/env bash
 # Runs inside the emscripten/emsdk container (see build.sh and the CI workflow). Builds a single-thread, SIMD, classical-eval
 # Rapfi for the browser. The NNUE networks are ~10 MB each, so they are left out on purpose; the classical model is ~60 kB.
 set -euo pipefail
