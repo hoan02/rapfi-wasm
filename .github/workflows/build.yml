@@ -1,0 +1,28 @@
+﻿name: build
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: emscripten/emsdk:3.1.74
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Fetch Rapfi and its networks
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init --depth 1 rapfi
+          git -C rapfi submodule update --init --depth 1 Networks
+      - name: Build
+        run: bash scripts/build-in-container.sh
+      - name: Sizes
+        run: |
+          ls -l dist
+          for f in dist/*; do echo "$f gzip: $(gzip -9 -c "$f" | wc -c) bytes"; done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rapfi-wasm
+          path: dist
