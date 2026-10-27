@@ -17,6 +17,9 @@ classical/model260809.bin@/model260809.bin
 EOF
 
 cd "$SRC/Rapfi"
+# ES module output (default export = the Rapfi factory), so a module Web Worker can import it.
+sed -i 's/-s MODULARIZE=1 /-s MODULARIZE=1 -s EXPORT_ES6=1 /' CMakeLists.txt
+grep -q 'EXPORT_ES6=1' CMakeLists.txt
 emcmake cmake -S . -B /tmp/build -DCMAKE_BUILD_TYPE=Release -DNO_COMMAND_MODULES=ON -DUSE_WASM_SIMD=ON -DNO_MULTI_THREADING=ON
 cmake --build /tmp/build -j"$(nproc)"
 
