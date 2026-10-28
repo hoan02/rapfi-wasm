@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
-# Runs inside the emscripten/emsdk container (see build.sh and the CI workflow). Builds a single-thread, SIMD, classical-eval
-# Rapfi for the browser. The NNUE networks are ~10 MB each, so they are left out on purpose; the classical model is ~60 kB.
+# Runs inside the emscripten/emsdk container (see build.sh and the CI workflow). Builds two classical-eval, SIMD Rapfi builds for
+# the browser: single-thread (rapfi-single-simd128, works everywhere) and multi-thread (rapfi-multi-simd128, pthreads: needs a
+# cross-origin isolated page for SharedArrayBuffer). The NNUE networks are ~10 MB each, so they are left out on purpose; the
+# classical model is ~60 kB.
 set -euo pipefail
 
 SRC=/tmp/src
 NET=rapfi/Networks
-rm -rf "$SRC" /tmp/build
+rm -rf "$SRC" /tmp/build-single /tmp/build-multi
 mkdir -p "$SRC/Networks/config-example" "$SRC/Networks/classical"
 cp -r rapfi/Rapfi "$SRC/Rapfi"
 cp "$NET/config-example/gomocalc-classical260809.toml" "$SRC/Networks/config-example/"
@@ -20,10 +22,14 @@ cd "$SRC/Rapfi"
 # ES module output (default export = the Rapfi factory), so a module Web Worker can import it.
 sed -i 's/-s MODULARIZE=1 /-s MODULARIZE=1 -s EXPORT_ES6=1 /' CMakeLists.txt
 grep -q 'EXPORT_ES6=1' CMakeLists.txt
-emcmake cmake -S . -B /tmp/build -DCMAKE_BUILD_TYPE=Release -DNO_COMMAND_MODULES=ON -DUSE_WASM_SIMD=ON -DNO_MULTI_THREADING=ON
-cmake --build /tmp/build -j"$(nproc)"
+
+emcmake cmake -S . -B /tmp/build-single -DCMAKE_BUILD_TYPE=Release -DNO_COMMAND_MODULES=ON -DUSE_WASM_SIMD=ON -DNO_MULTI_THREADING=ON
+cmake --build /tmp/build-single -j"$(nproc)"
+
+emcmake cmake -S . -B /tmp/build-multi -DCMAKE_BUILD_TYPE=Release -DNO_COMMAND_MODULES=ON -DUSE_WASM_SIMD=ON -DNO_MULTI_THREADING=OFF
+cmake --build /tmp/build-multi -j"$(nproc)"
 
 cd - >/dev/null
 rm -rf dist && mkdir -p dist
-find /tmp/build -maxdepth 2 -type f \( -name 'rapfi*.js' -o -name 'rapfi*.wasm' -o -name 'rapfi*.data' \) -exec cp -v {} dist/ \;
+find /tmp/build-single /tmp/build-multi -maxdepth 2 -type f \( -name 'rapfi*.js' -o -name 'rapfi*.wasm' -o -name 'rapfi*.data' \) -exec cp -v {} dist/ \;
 ls -l dist
